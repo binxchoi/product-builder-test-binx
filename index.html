@@ -12,3 +12,285 @@
   <script defer type="text/javascript" src="/main.js"></script>
 </body>
 </html>
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>로또 번호 추천기 (5세트)</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --card: rgba(255, 255, 255, 0.06);
+      --text: rgba(255, 255, 255, 0.92);
+      --muted: rgba(255, 255, 255, 0.65);
+      --border: rgba(255, 255, 255, 0.12);
+      --shadow: 0 20px 60px rgba(0,0,0,0.35);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Apple SD Gothic Neo", "Noto Sans KR", Arial, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(1200px 800px at 20% 10%, rgba(123, 92, 255, 0.35), transparent 60%),
+        radial-gradient(1000px 700px at 80% 20%, rgba(0, 225, 255, 0.25), transparent 55%),
+        radial-gradient(900px 700px at 55% 90%, rgba(255, 143, 0, 0.18), transparent 55%),
+        var(--bg);
+    }
+
+    .wrap { width: min(820px, 100%); }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 28px;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      letter-spacing: -0.02em;
+    }
+
+    p {
+      margin: 0 0 18px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-top: 18px;
+    }
+
+    button {
+      appearance: none;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.10);
+      color: var(--text);
+      border-radius: 14px;
+      padding: 12px 14px;
+      font-size: 15px;
+      cursor: pointer;
+      transition: transform 0.08s ease, background 0.2s ease, border-color 0.2s ease;
+      user-select: none;
+    }
+    button:hover { background: rgba(255, 255, 255, 0.14); border-color: rgba(255,255,255,0.18); }
+    button:active { transform: translateY(1px); }
+    button:focus-visible { outline: 2px solid rgba(123,92,255,0.65); outline-offset: 2px; }
+
+    /* 5세트 출력 레이아웃 */
+    .sets {
+      display: grid;
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .set {
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 16px;
+      padding: 14px;
+      background: rgba(255,255,255,0.04);
+      display: grid;
+      gap: 10px;
+    }
+
+    .set-title {
+      font-weight: 800;
+      font-size: 14px;
+      letter-spacing: -0.02em;
+      color: rgba(255,255,255,0.85);
+    }
+
+    .numbers {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .ball {
+      width: 50px;
+      height: 50px;
+      display: grid;
+      place-items: center;
+      border-radius: 999px;
+      font-weight: 900;
+      font-size: 17px;
+      border: 1px solid rgba(255,255,255,0.16);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+      background: rgba(255,255,255,0.10);
+    }
+
+    .meta {
+      margin-top: 14px;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .toast {
+      margin-top: 10px;
+      font-size: 13px;
+      color: rgba(255,255,255,0.75);
+    }
+
+    @media (max-width: 420px) {
+      .ball { width: 46px; height: 46px; font-size: 16px; }
+      h1 { font-size: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="card" aria-labelledby="title">
+      <h1 id="title">로또 번호 추천기 (한 번에 5세트)</h1>
+      <p>버튼을 누르면 <b>1~45</b> 사이 번호 6개를 <b>중복 없이</b> 뽑아서 <b>총 5세트</b>를 한 번에 추천해줘요.</p>
+
+      <div class="row">
+        <button id="btnPick" type="button">🎲 5세트 추천</button>
+        <button id="btnCopy" type="button">📋 전체 복사</button>
+        <button id="btnReset" type="button">↩︎ 초기화</button>
+      </div>
+
+      <!-- 세트 출력 -->
+      <div id="sets" class="sets" aria-live="polite" aria-label="추천 번호 5세트 영역"></div>
+
+      <div class="meta">
+        <span id="hint">아직 추천 전이에요.</span>
+        <span id="time"></span>
+      </div>
+
+      <div id="toast" class="toast" aria-live="polite"></div>
+    </section>
+  </main>
+
+  <script>
+    const $ = (sel) => document.querySelector(sel);
+
+    const setsEl = $("#sets");
+    const hintEl = $("#hint");
+    const timeEl = $("#time");
+    const toastEl = $("#toast");
+
+    // 5세트를 저장
+    let lastPicks = []; // [[...],[...],[...],[...],[...]]
+
+    function nowString() {
+      const d = new Date();
+      return d.toLocaleString("ko-KR", { hour12: false });
+    }
+
+    function shuffle(arr) {
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function pickOneSet() {
+      const pool = Array.from({ length: 45 }, (_, i) => i + 1);
+      shuffle(pool);
+      return pool.slice(0, 6).sort((a, b) => a - b);
+    }
+
+    function pickFiveSets() {
+      const sets = [];
+      for (let i = 0; i < 5; i++) {
+        sets.push(pickOneSet());
+      }
+      return sets;
+    }
+
+    function renderSets(sets) {
+      setsEl.innerHTML = "";
+
+      sets.forEach((nums, idx) => {
+        const setWrap = document.createElement("div");
+        setWrap.className = "set";
+
+        const title = document.createElement("div");
+        title.className = "set-title";
+        title.textContent = `세트 ${idx + 1}`;
+
+        const numbers = document.createElement("div");
+        numbers.className = "numbers";
+
+        nums.forEach((n) => {
+          const ball = document.createElement("div");
+          ball.className = "ball";
+          ball.textContent = n;
+          numbers.appendChild(ball);
+        });
+
+        setWrap.appendChild(title);
+        setWrap.appendChild(numbers);
+        setsEl.appendChild(setWrap);
+      });
+    }
+
+    function setToast(msg) {
+      toastEl.textContent = msg;
+      if (!msg) return;
+      clearTimeout(setToast._t);
+      setToast._t = setTimeout(() => (toastEl.textContent = ""), 1600);
+    }
+
+    $("#btnPick").addEventListener("click", () => {
+      lastPicks = pickFiveSets();
+      renderSets(lastPicks);
+
+      hintEl.textContent = "추천 완료! (5세트)";
+      timeEl.textContent = `생성: ${nowString()}`;
+      setToast("5세트 번호가 생성됐어요!");
+    });
+
+    $("#btnCopy").addEventListener("click", async () => {
+      if (!lastPicks.length) {
+        setToast("먼저 5세트 추천을 눌러주세요.");
+        return;
+      }
+
+      // 복사 포맷
+      // 1) 1, 2, 3, 4, 5, 6
+      // 2) ...
+      const text = lastPicks
+        .map((nums, i) => `${i + 1}) ${nums.join(", ")}`)
+        .join("\n");
+
+      try {
+        await navigator.clipboard.writeText(text);
+        setToast("전체 5세트를 복사했어요!");
+      } catch (e) {
+        setToast("복사 권한이 없어요. 텍스트를 직접 선택해 복사해 주세요.");
+      }
+    });
+
+    $("#btnReset").addEventListener("click", () => {
+      lastPicks = [];
+      setsEl.innerHTML = "";
+      hintEl.textContent = "아직 추천 전이에요.";
+      timeEl.textContent = "";
+      setToast("초기화했어요.");
+    });
+  </script>
+</body>
+</html>
