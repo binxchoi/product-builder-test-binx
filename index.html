@@ -22,6 +22,9 @@
       --ball-bg: rgba(255,255,255,0.10);
       --ball-border: rgba(255,255,255,0.16);
       --accent: rgba(123,92,255,0.65);
+      --toggle-track: rgba(255,255,255,0.20);
+      --toggle-track-active: rgba(123,92,255,0.75);
+      --toggle-thumb: rgba(255,255,255,0.95);
       --radius: 18px;
     }
 
@@ -42,6 +45,9 @@
       --ball-bg: rgba(0,0,0,0.04);
       --ball-border: rgba(0,0,0,0.12);
       --accent: rgba(255, 138, 61, 0.65);
+      --toggle-track: rgba(0,0,0,0.14);
+      --toggle-track-active: rgba(255, 138, 61, 0.65);
+      --toggle-thumb: rgba(255,255,255,1);
     }
 
     * { box-sizing: border-box; }
@@ -61,6 +67,53 @@
     }
 
     .wrap { width: min(820px, 100%); }
+
+    .theme-toggle {
+      position: fixed;
+      top: 20px;
+      right: 24px;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 5;
+      color: var(--muted);
+      font-size: 13px;
+      letter-spacing: -0.01em;
+    }
+
+    .toggle {
+      width: 54px;
+      height: 30px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--toggle-track);
+      position: relative;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-start;
+      transition: background 0.2s ease, border-color 0.2s ease;
+      cursor: pointer;
+    }
+
+    .toggle-thumb {
+      width: 24px;
+      height: 24px;
+      border-radius: 999px;
+      background: var(--toggle-thumb);
+      transform: translateX(3px);
+      transition: transform 0.2s ease;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+    }
+
+    .toggle[aria-checked="true"] {
+      background: var(--toggle-track-active);
+      border-color: transparent;
+    }
+
+    .toggle[aria-checked="true"] .toggle-thumb {
+      transform: translateX(27px);
+    }
 
     .card {
       background: var(--card);
@@ -170,10 +223,17 @@
     @media (max-width: 420px) {
       .ball { width: 46px; height: 46px; font-size: 16px; }
       h1 { font-size: 24px; }
+      .theme-toggle { top: 14px; right: 14px; }
     }
   </style>
 </head>
 <body>
+  <div class="theme-toggle">
+    <span id="themeLabel">다크</span>
+    <button id="btnTheme" class="toggle" type="button" role="switch" aria-checked="true" aria-labelledby="themeLabel">
+      <span class="toggle-thumb"></span>
+    </button>
+  </div>
   <main class="wrap">
     <section class="card" aria-labelledby="title">
       <h1 id="title">로또 번호 추천기 (한 번에 5세트)</h1>
@@ -183,7 +243,6 @@
         <button id="btnPick" type="button">🎲 5세트 추천</button>
         <button id="btnCopy" type="button">📋 전체 복사</button>
         <button id="btnReset" type="button">↩︎ 초기화</button>
-        <button id="btnTheme" type="button" aria-pressed="true">☀️ 라이트모드</button>
       </div>
 
       <!-- 세트 출력 -->
@@ -206,6 +265,7 @@
     const timeEl = $("#time");
     const toastEl = $("#toast");
     const themeBtn = $("#btnTheme");
+    const themeLabel = $("#themeLabel");
     const themeKey = "theme";
 
     // 5세트를 저장
@@ -275,8 +335,8 @@
     function applyTheme(theme) {
       const nextTheme = theme === "light" ? "light" : "dark";
       document.documentElement.setAttribute("data-theme", nextTheme);
-      themeBtn.textContent = nextTheme === "dark" ? "☀️ 라이트모드" : "🌙 다크모드";
-      themeBtn.setAttribute("aria-pressed", nextTheme === "dark" ? "true" : "false");
+      themeBtn.setAttribute("aria-checked", nextTheme === "dark" ? "true" : "false");
+      themeLabel.textContent = nextTheme === "dark" ? "다크" : "라이트";
     }
 
     function initTheme() {
